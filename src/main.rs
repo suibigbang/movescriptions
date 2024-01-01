@@ -1,20 +1,17 @@
-use std::cmp::{max, min};
-use std::ops::Sub;
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 use futures::StreamExt;
 use clap::{Parser, Subcommand};
 use move_core_types::language_storage::StructTag;
 use shared_crypto::intent::Intent;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore};
-use sui_sdk::rpc_types::{EventFilter, SuiExecutionStatus, SuiObjectDataOptions, SuiParsedData, SuiTransactionBlockEffects, SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions};
+use sui_sdk::rpc_types::{EventFilter, SuiExecutionStatus, SuiTransactionBlockEffects, SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions};
 use sui_sdk::{SuiClient, SuiClientBuilder};
 use sui_sdk::types::base_types::{ObjectID, SequenceNumber, SuiAddress};
 use sui_sdk::types::crypto::SignatureScheme;
 use sui_sdk::types::{Identifier, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION};
 use sui_sdk::types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_sdk::types::quorum_driver_types::ExecuteTransactionRequestType;
 use sui_sdk::types::transaction::{Argument, Command, ObjectArg, Transaction, TransactionData};
 
 
@@ -64,8 +61,8 @@ async fn main() -> Result<(), anyhow::Error> {
             println!("use address {}", address);
             loop {
                 let sui_mainnet = SuiClientBuilder::default()
-                    .ws_url(ws.as_ref().map(|s|s.as_str()).unwrap_or(SUI_MAIN_WS)).ws_ping_interval(Duration::from_secs(10))
-                    .build(http.as_ref().map(|s|s.as_str()).unwrap_or(SUI_MAINNET)).await?;
+                    .ws_url(ws.as_deref().unwrap_or(SUI_MAIN_WS)).ws_ping_interval(Duration::from_secs(10))
+                    .build(http.as_deref().unwrap_or(SUI_MAINNET)).await?;
                 println!("Sui mainnet version: {}", sui_mainnet.api_version());
 
                 if let Err(e) = start(sui_mainnet, &k, address, tick.clone(), tick_address.clone(), mint_fee).await {
@@ -88,14 +85,11 @@ async fn start(sui_mainnet: SuiClient, k: &impl AccountKeystore, address: SuiAdd
                 let value = event.parsed_json;
                 let epoch: u64 = value.get("epoch").unwrap().as_str().unwrap().parse()?;
                 println!("new epoch: {:?}", epoch);
-                let start_time_ms: u64 = value.get("start_time_ms").unwrap().as_str().unwrap().parse()?;
 
-                let expected_time_ms = start_time_ms+60*1000;
-                wait_clock(&sui_mainnet, expected_time_ms, 3000).await?;
                 let time = Instant::now();
                 let txn_response = mint(k, &sui_mainnet, address, tick.clone(), tick_address.clone(), mint_fee).await?;
 
-                let err = match txn_response.effects {
+                let _err = match txn_response.effects {
                     None => Some("None txn".to_string()),
                     Some(tx) =>{
                         match tx {
@@ -116,27 +110,6 @@ async fn start(sui_mainnet: SuiClient, k: &impl AccountKeystore, address: SuiAdd
     Ok(())
 }
 
-/// wait clock
-async fn wait_clock(sui: &SuiClient, time: u64, precision: u64) -> anyhow::Result<u64> {
-    loop {
-
-        let timing = Instant::now();
-        let clock = sui.read_api().get_object_with_options(SUI_CLOCK_OBJECT_ID, SuiObjectDataOptions::new().with_content()).await?;
-
-        let clock_time: u64 = match clock.data.unwrap().content.unwrap() {
-            SuiParsedData::MoveObject(obj) => {obj.read_dynamic_field_value("timestamp_ms").unwrap().to_json_value().as_str().unwrap().parse()?}
-            SuiParsedData::Package(_) => {unreachable!()}
-        };
-
-        println!("clock, elapsed: {:?}, cur: {}, expected: {}, diff: {}", timing.elapsed(), clock_time, time,(time as i64).sub(clock_time as i64));
-        if clock_time >= time-precision {
-            return Ok(clock_time);
-        }
-        tokio::time::sleep(Duration::from_millis(max(precision, (time - clock_time)/2))).await;
-    }
-
-
-}
 async fn mint(key_store: &impl AccountKeystore, sui_mainnet: &SuiClient,  address: SuiAddress,tick: String, tick_address: String, mint_fee: u64) -> anyhow::Result<SuiTransactionBlockResponse> {
     let coins = sui_mainnet
         .coin_read_api()
