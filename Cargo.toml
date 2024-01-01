@@ -6,9 +6,16 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-hex = "0.4.3"
-tracing = "0.1"
-tracing-subscriber = "0.3"
+#hex = "0.4.3"
+#tracing = "0.1"
+#tracing-subscriber = "0.3"
 clap = { version = "4.4.11", features = ["derive", "env"] }
-merkletree = { version = "0.23.0" }
-fastcrypto = { git = "https://github.com/mystenlabs/fastcrypto", rev = "9579a60fbffe15c0f65626ae55998bf8ef42e193" }
+#merkletree = { version = "0.23.0" }
+#fastcrypto = { git = "https://github.com/mystenlabs/fastcrypto", rev = "9579a60fbffe15c0f65626ae55998bf8ef42e193" }
+sui-sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk"}
+sui-keys = { git = "https://github.com/mystenlabs/sui", package = "sui-keys"}
+shared-crypto = { git = "https://github.com/mystenlabs/sui", package = "shared-crypto"}
+move-core-types = { git = "https://github.com/mystenlabs/sui", package = "move-core-types"}
+tokio = { version = "1", features = ["full"] }
+futures = { version = "0.3" }
+anyhow = "1.0"
