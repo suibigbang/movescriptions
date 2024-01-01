@@ -33,6 +33,22 @@ Below is the prototype code for the Movescriptions protocol. Note that different
 
 * [Sui] PackageID: [0x830fe26674dc638af7c3d84030e2575f44a2bdc1baa1f4757cfe010a4b106b6a](https://suiexplorer.com/object/0x830fe26674dc638af7c3d84030e2575f44a2bdc1baa1f4757cfe010a4b106b6a)
 
+## Auto Mint #MOVE inscription
+
+The repo provides a command to auto mint MOVE inscription in https://mrc20.fun/ticks/move.
+It will mint a inscription in each epoch.
+
+``` shell
+cargo build --release
+```
+
+```shell
+movescription mint -k sui.key --tick MOVE --tick-address 0xfa6f8ab30f91a3ca6f969d117677fb4f669e08bbeed815071cf38f4d19284199 -f 100000000
+```
+
+replace the sui.key file with your file containing your mnemonic words.
+
+
 ## Contribution Guidelines
 
 We welcome community contributions to the Movescriptions protocol. If you are interested in contributing to development or offering suggestions for improvement, directly submits a PR or issue on GitHub. 
